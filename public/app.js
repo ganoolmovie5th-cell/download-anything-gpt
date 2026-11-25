@@ -1,6 +1,6 @@
-import { inject } from '@vercel/analytics';
+import { inject } from '/analytics.js';
 
-inject();
+if (!['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) inject();
 
 const $ = id => document.getElementById(id);
 const labels = { image: 'Foto', video: 'Video', audio: 'Audio', document: 'Dokumen', other: 'File' };

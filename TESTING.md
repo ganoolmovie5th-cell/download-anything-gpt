@@ -16,6 +16,7 @@
 - Ketujuh varian Instagram diunduh dan diperiksa dimensinya: 240×300, 320×400, 480×600, 640×800, 720×900, 1080×1350, 1440×1800. Semua berasio 4:5.
 - DOCX Calibre `https://calibre-ebook.com/downloads/demos/demo.docx`: HTTP 200, 1.311.881 byte, signature ZIP DOCX valid, attachment filename benar.
 - Audit akhir setelah perbaikan kontras: Accessibility 100, Best Practices 100, SEO 100, 34 passed/0 failed. PDF juga berhasil melalui tombol Unduh di browser.
+- Perubahan remote Vercel Analytics dipertahankan. Import browser kini memakai `/analytics.js`, disalin dari paket saat build dan disajikan server dev; bare package import sebelumnya tidak dapat di-resolve browser tanpa bundler. Tracking dilewati pada localhost.
 - Audit dependensi: 0 vulnerability.
 
 Produksi Vercel, Safari/Firefox, dan trafik serentak belum diuji. Sumber eksternal dapat berubah berdasarkan IP, anti-bot, atau kedaluwarsa URL. Tidak ada klaim seluruh internet didukung.
