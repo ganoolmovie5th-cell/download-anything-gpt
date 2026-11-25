@@ -1,3 +1,7 @@
+import { inject } from '@vercel/analytics';
+
+inject();
+
 const $ = id => document.getElementById(id);
 const labels = { image: 'Foto', video: 'Video', audio: 'Audio', document: 'Dokumen', other: 'File' };
 let files = [], filter = 'all', controller, generation = 0;
