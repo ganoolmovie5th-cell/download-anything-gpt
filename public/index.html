@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Download Anything — Satu tautan, temukan filenya.</title>
+<meta name="description" content="Temukan dan unduh foto, video, audio, dan dokumen publik dari satu URL. Pilih format dan kualitas asli yang tersedia.">
+<meta name="theme-color" content="#176b56"><link rel="canonical" href="https://download-anything.web.id/">
+<link rel="icon" href="/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head>
+<body>
+<a class="skip" href="#url">Langsung ke kolom URL</a>
+<header class="header wrap"><a class="brand" href="/"><img src="/logo.svg" width="42" height="42" alt=""><span>download<span class="brand-light">anything</span><small>FILE YANG KAMU CARI. SATU TEMPAT.</small></span></a><a class="help-link" href="#help">Cara pakai <span aria-hidden="true">↗</span></a></header>
+<main class="wrap">
+<section class="workspace" aria-labelledby="heading">
+<div class="intro"><p class="eyebrow"><span class="dot"></span> SIMPAN YANG BERARTI</p><h1 id="heading">Satu tautan.<br><em>Banyak kemungkinan.</em></h1><p class="lead">Foto, video, audio, sampai dokumen.<br>Tempel tautannya. Temukan file yang tersedia.</p></div>
+<div class="downloader">
+<div class="tool-top"><span class="tool-title"><span aria-hidden="true">↙</span> Mulai dari sini</span><span class="badge">Tanpa instal aplikasi</span></div>
+<form id="form"><label for="url">Tautan halaman atau file</label><div class="url-field"><span aria-hidden="true">↗</span><input id="url" name="url" type="url" required maxlength="4096" placeholder="https://website.com/file-kamu" autocomplete="off" spellcheck="false" aria-describedby="input-hint"><button type="button" id="paste" class="paste">Tempel</button></div><p id="input-hint" class="hint">URL publik dengan http:// atau https://</p><button type="submit" class="primary" id="submit">Temukan file <span aria-hidden="true">→</span></button><button type="button" class="cancel" id="cancel" hidden>Batalkan pencarian</button></form>
+<p class="privacy"><span aria-hidden="true">◇</span> Tanpa akun. Tautan tidak disimpan oleh aplikasi.</p>
+</div>
+</section>
+<div class="formats" aria-label="Jenis file"><span>SEDIA UNTUK</span><span>▧ Foto <small>JPG · PNG · WEBP</small></span><span>▷ Video <small>MP4 · WEBM</small></span><span>♫ Audio <small>MP3 · WAV · FLAC</small></span><span>▤ Dokumen <small>PDF · DOCX · ZIP</small></span></div>
+<section id="results" class="results" aria-labelledby="results-title" hidden>
+<div class="result-heading"><div><p class="eyebrow">HASIL PENCARIAN</p><h2 id="results-title">File tersedia</h2><p id="source" class="source"></p></div><span id="count" class="count"></span></div>
+<div class="controls"><div id="filters" class="filters" role="group" aria-label="Filter jenis file"><button data-type="all" aria-pressed="true">Semua</button><button data-type="image" aria-pressed="false">Foto</button><button data-type="video" aria-pressed="false">Video</button><button data-type="audio" aria-pressed="false">Audio</button><button data-type="document" aria-pressed="false">Dokumen</button><button data-type="other" aria-pressed="false">Lainnya</button></div><label class="sort-label">Kualitas <select id="sort"><option value="desc">Tinggi → rendah</option><option value="asc">Rendah → tinggi</option></select></label></div>
+<p class="notice" id="result-note"></p><div id="files" class="files"></div>
+</section>
+<div id="status" role="status" aria-live="polite" class="status" hidden></div>
+<section class="guide" id="help" aria-labelledby="guide-title"><div class="guide-heading"><p class="eyebrow">SESEDERHANA ITU</p><h2 id="guide-title">Dari tautan ke perangkatmu.</h2></div><div class="steps"><article><span class="number">01</span><h3>Tempel tautan</h3><p>Gunakan URL file langsung atau halaman publik yang memuat file.</p></article><article><span class="number">02</span><h3>Pilih yang kamu perlu</h3><p>Filter jenis file, lalu pilih format dan kualitas yang disediakan sumber.</p></article><article><span class="number">03</span><h3>Simpan filenya</h3><p>Unduh file hingga 3 MB di sini. Untuk file besar, buka sumber langsung.</p></article></div></section>
+<section class="faq"><h2>Baik untuk diketahui.</h2><div><details><summary>Apakah semua website didukung?</summary><p>File publik langsung dan file yang tercantum pada HTML didukung. Situs yang membutuhkan JavaScript, login, cookie, atau ekstraktor khusus seperti YouTube/TikTok tidak dijamin. DRM dan penggabungan streaming HLS/DASH tidak didukung.</p></details><details><summary>Bisa memilih kualitas dan mengubah format?</summary><p>Kualitas ditampilkan jika sumber menyediakan beberapa varian, misalnya gambar srcset atau video berlabel 360p/1080p. “Asli” berarti sumber tidak memberi label kualitas. Aplikasi tidak melakukan konversi, upscale, atau membuat varian baru. Urutan mengikuti angka label sumber, bukan penilaian kualitas visual.</p></details><details><summary>Kenapa file besar dibuka di sumber?</summary><p>Unduhan lewat server dibatasi 3 MB agar sesuai batas Vercel. “Buka sumber” menuju URL asli; browser bisa memutar atau menampilkan file. Gunakan menu simpan browser. Sumber dapat menolak akses atau menonaktifkan unduhan.</p></details></div></section>
+</main><footer class="wrap"><span>© <span id="year"></span> Download Anything</span><span>Unduh hanya konten yang kamu miliki atau diizinkan.</span><a href="#url">Kembali ke atas ↑</a></footer>
+</body></html>
