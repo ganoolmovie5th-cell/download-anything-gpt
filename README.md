@@ -9,13 +9,15 @@ Website berbahasa Indonesia untuk menemukan dan mengunduh file publik dari URL. 
 - Halaman HTML: `img`, lazy `data-src`, `srcset`, `picture`, `video`, `audio`, `source`, poster, metadata Open Graph, dan link file/download.
 - Filter tipe, label format, ukuran jika tersedia, serta urutan kualitas rendah/tinggi berdasarkan label numerik sumber.
 - Unduh melalui server sampai **3 MiB (3.145.728 byte)**. File lebih besar menggunakan **Buka sumber**, tanpa diproxy Vercel.
+- Verifikasi GET untuk maksimal 12 kandidat (empat koneksi bersamaan); respons HTML/perantara tidak diberi tombol Unduh.
+- Instagram: varian foto dari embed publik, tanpa varian crop yang eksplisit. Format mengikuti MIME (JPEG tidak lagi bernama HEIC).
 - Logo SVG, favicon, layout responsif, keyboard focus, live status, pembatalan pencarian, serta pesan error yang jelas.
 
 ## Batasan yang disengaja
 
-Ini bukan downloader universal. Tidak menjalankan JavaScript halaman, tidak login, tidak mengirim cookie pengguna, tidak melewati DRM, tidak mengekstrak playlist, tidak menggabungkan HLS/DASH atau audio/video terpisah. YouTube, TikTok, Instagram dan situs sejenis tidak dijamin bekerja. Gunakan URL file publik langsung jika tersedia.
+Ini bukan downloader universal. Tidak menjalankan JavaScript halaman, tidak login, tidak mengirim cookie pengguna, tidak melewati DRM, tidak mengekstrak playlist, tidak menggabungkan HLS/DASH atau audio/video terpisah. Video YouTube menampilkan batasan eksplisit tanpa hasil unduhan palsu. TikTok dan situs sejenis tidak dijamin bekerja. Foto Instagram didukung jika tersedia pada embed publik; kelengkapan carousel dan video tidak dijamin. Gunakan URL file publik langsung jika tersedia.
 
-Format/kualitas hanya berasal dari sumber, tanpa konversi atau upscale. `Asli` berarti tidak ada label kualitas dari sumber. Angka `w`, `x`, dan `p` mengikuti informasi sumber dan bukan perbandingan kualitas visual universal. Parser srcset mendukung bentuk standar sederhana; URL yang mengandung koma belum didukung. Maksimum 150 hasil, HTML maksimal 2 MiB, maksimum 4 redirect, waktu ekstraksi 20 detik. Link HTML belum diverifikasi satu per satu; file dapat hilang, kedaluwarsa, atau menolak akses ketika diunduh. Server yang mengabaikan `Accept-Encoding: identity` ditolak.
+Format/kualitas hanya berasal dari sumber, tanpa konversi atau upscale. `Asli` berarti tidak ada label kualitas dari sumber. Angka `w`, `x`, dan `p` mengikuti informasi sumber dan bukan perbandingan kualitas visual universal. Parser srcset mendukung bentuk standar sederhana; URL yang mengandung koma belum didukung. Maksimum 150 hasil, HTML maksimal 2 MiB, maksimum 4 redirect, waktu ekstraksi/verifikasi 22 detik. Maksimal 12 link diperiksa memakai GET probe 8 KiB; sisanya diberi status belum diverifikasi. File dapat hilang, kedaluwarsa, atau menolak akses setelah pemeriksaan. Halaman anti-bot tidak dilewati. Server yang mengabaikan `Accept-Encoding: identity` ditolak.
 
 Browser dapat menampilkan/memutar file saat memilih Buka sumber. Pengguna dapat memakai menu simpan browser; aplikasi tidak dapat memaksa unduhan lintas domain. Keberhasilan API unduh berarti byte diterima browser, bukan bukti file telah tersimpan di disk.
 

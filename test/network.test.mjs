@@ -45,3 +45,12 @@ test('rejects redirect loops, blocked sources and unsupported compression', asyn
   t.mock.restoreAll(); upstream(t, 200, { 'content-encoding': 'gzip' });
   await assert.rejects(fetchPublic('http://8.8.8.8/gzip'), /kompresi/);
 });
+test('binary GET probe stops after 8 KiB without buffering a large file', async t => {
+  upstream(t, 200, { 'content-type': 'audio/mpeg', 'content-length': '22693138' }, [Buffer.alloc(10000)]);
+  const result = await fetchPublic('http://8.8.8.8/song.mp3', { probe: true });
+  assert.equal(result.body.length, 8192); assert.equal(result.partial, true);
+});
+test('probe still enforces HTML size limits', async t => {
+  upstream(t, 200, { 'content-type': 'text/html', 'content-length': '1000' });
+  await assert.rejects(fetchPublic('http://8.8.8.8/page', { probe: true, limit: 10 }), { status: 413 });
+});
