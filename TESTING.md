@@ -1,3 +1,16 @@
+# Unduhan bertahap — 25 November 2026 (Asia/Jakarta)
+
+- File besar yang sudah terdeteksi diambil lewat `/api/transfer` dan `/api/chunk` per 2 MiB. Bukan pemecahan/konversi format media; byte disusun identik sesuai urutan sumber.
+- MP3 pengguna: 22.693.138 byte, 11 bagian. SHA-256 hasil gabungan sama dengan unduhan langsung: `ed9aa083ba833b4f9af2cf1bdf1e844101821d4ea35988bd068ff1080bd6cb83`.
+- UI browser nyata melalui endpoint lokal menghasilkan Blob dengan ukuran dan SHA-256 yang sama; progres sampai 100%. Klik penyimpanan file browser dicegat untuk pemeriksaan Blob, bukan klaim file tersimpan di disk pengguna.
+- Jalur tulis langsung menggunakan File System Access API diuji dengan writable sink fixture: urutan byte benar, close hanya setelah lengkap, abort ketika batal/invalid. Dialog simpan OS dan file fisik belum diuji.
+- 33 unit/security/regression tests lulus: Range/If-Range, Content-Range, penanda versi, ukuran/urutan/bagian akhir, penolakan sumber yang mengabaikan Range, body terpotong, fallback 128 MiB, batal, retry tanpa duplikasi, rate-limit wait yang dapat dibatalkan, plus regresi fitur sebelumnya.
+- UI cancel saat chunk pending: writer dibatalkan, tidak di-close, tombol kembali aktif. Unduhan kecil PNG/MP4/MP3/PDF tetap lulus dengan checksum identik.
+- Mobile 390×844 diperiksa; Lighthouse Accessibility 100, Best Practices 100, SEO 100; 35 passed, 0 failed.
+- Produksi Vercel untuk transfer multipart, Safari/Firefox/perangkat fisik, file melebihi 128 MiB, dan penyimpanan OS belum diuji. Video YouTube tetap tidak didukung. Tab harus terbuka; tidak ada resume setelah reload. Bandwidth dan jumlah request Vercel tetap dihitung.
+
+---
+
 # Regresi dan revamp — 25 November 2026 (Asia/Jakarta)
 
 ## Empat URL pengguna

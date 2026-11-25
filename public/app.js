@@ -1,13 +1,15 @@
+import { downloadParts } from '/transfer.js';
 import { inject } from '/analytics.js';
 
 if (!['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) inject();
 
 const $ = id => document.getElementById(id);
 const labels = { image: 'Foto', video: 'Video', audio: 'Audio', document: 'Dokumen', other: 'File' };
+let activeDownload;
 let files = [], filter = 'all', controller, generation = 0;
 $('year').textContent = new Date().getFullYear();
 function status(message, error = false) { $('status').hidden = false; $('status').textContent = message; $('status').className = `status${error ? ' error' : ''}`; }
-function sizeLabel(size) { return size ? size < 1048576 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1048576).toFixed(1)} MB` : 'Ukuran belum diketahui'; }
+function sizeLabel(size) { return size === 0 ? '0 KB' : size ? size < 1048576 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1048576).toFixed(1)} MB` : 'Ukuran belum diketahui'; }
 async function request(path, url, signal) {
   const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal });
   if (!response.ok) {
@@ -33,23 +35,50 @@ function render() {
     const meta = document.createElement('p'); meta.className = 'file-meta'; meta.textContent = `${labels[file.type] || 'File'} · ${file.quality} · ${sizeLabel(file.size)}`;
     info.append(title, meta);
     const detail = document.createElement('p'); detail.className = 'file-detail';
-    detail.textContent = file.problem || (file.size > 3 * 1024 * 1024 ? 'Lebih dari 3 MB. Simpan melalui sumber langsung.' : 'File terverifikasi'); info.append(detail);
+    detail.textContent = file.problem || (file.size > 3 * 1024 * 1024 ? 'Diunduh bertahap, lalu disimpan sebagai satu file. Sumber harus mendukung byte-range.' : 'File terverifikasi'); info.append(detail);
     const actions = document.createElement('div'); actions.className = 'file-actions';
     const link = document.createElement('a'); link.className = 'source-link'; link.href = file.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Buka sumber'; link.setAttribute('aria-label', `Buka sumber ${file.name}`);
-    if (file.verified && (!file.size || file.size <= 3 * 1024 * 1024)) {
+    if (file.verified) {
       const button = document.createElement('button'); button.className = 'download'; button.textContent = 'Unduh'; button.setAttribute('aria-label', `Unduh ${file.name}, ${file.quality}`);
+      button.disabled = Boolean(activeDownload);
       button.addEventListener('click', async () => {
-        button.disabled = true; button.textContent = 'Mengambil…'; status(`Mengambil ${file.name}…`);
+        if (activeDownload) return;
+        const job = new AbortController(); activeDownload = job;
+        document.querySelectorAll('.download').forEach(item => { item.disabled = true; });
+        $('transfer').hidden = false; $('transfer-name').textContent = file.displayName || file.name;
+        $('transfer-state').textContent = 'Menyiapkan unduhan…'; $('transfer-progress').removeAttribute('value');
+        $('transfer-bytes').textContent = ''; $('transfer-cancel').hidden = false;
         try {
-          const response = await request('/api/download', file.url, AbortSignal.timeout(25000));
-          const blob = await response.blob(); const objectUrl = URL.createObjectURL(blob);
-          const anchor = document.createElement('a'); anchor.href = objectUrl; const disposition = response.headers.get('content-disposition') || '';
-          const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-          let downloadName = file.name; try { if (encodedName) downloadName = decodeURIComponent(encodedName); } catch {}
-          anchor.download = downloadName; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-          status(`File ${file.name} diterima. Penyimpanan diserahkan ke browser; periksa daftar unduhan.`);
-        } catch (error) { status(error.name === 'TimeoutError' ? 'Unduhan terlalu lama. Coba lagi atau buka sumber.' : error.message, true); }
-        finally { button.disabled = false; button.textContent = 'Unduh'; }
+          let result;
+          if (file.size > 3 * 1024 * 1024) {
+            // Ask during the click gesture; waiting for network first loses browser activation.
+            const handle = typeof window.showSaveFilePicker === 'function' ? await window.showSaveFilePicker({ suggestedName: file.name }) : undefined;
+            job.signal.throwIfAborted();
+            result = await downloadParts({ url: file.url, handle, signal: job.signal, onProgress: ({ received, total, message }) => {
+              if (total) { $('transfer-progress').max = total; $('transfer-progress').value = received; $('transfer-bytes').textContent = `${sizeLabel(received)} / ${sizeLabel(total)} (${Math.floor(received / total * 100)}%)`; }
+              if (message) $('transfer-state').textContent = message;
+            } });
+          } else {
+            const response = await request('/api/download', file.url, AbortSignal.any([job.signal, AbortSignal.timeout(25000)]));
+            const blob = await response.blob(); job.signal.throwIfAborted();
+            const encodedName = (response.headers.get('content-disposition') || '').match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+            let name = file.name; try { if (encodedName) name = decodeURIComponent(encodedName); } catch {}
+            result = { blob, name, saved: false };
+          }
+          if (result.blob) {
+            const objectUrl = URL.createObjectURL(result.blob), anchor = document.createElement('a');
+            anchor.href = objectUrl; anchor.download = result.name; document.body.append(anchor); anchor.click(); anchor.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+          }
+          $('transfer-progress').max = 1; $('transfer-progress').value = 1;
+          $('transfer-state').textContent = result.saved ? 'Selesai. File utuh tersimpan di lokasi pilihanmu.' : 'File utuh diterima browser. Periksa daftar unduhan untuk memastikan penyimpanan.';
+        } catch (error) {
+          $('transfer-progress').max = 1; $('transfer-progress').value = 0;
+          $('transfer-state').textContent = job.signal.aborted || error.name === 'AbortError' ? 'Unduhan dibatalkan. File parsial tidak disimpan oleh aplikasi.' : error.name === 'TimeoutError' ? 'Sumber terlalu lama merespons. Coba lagi atau Buka sumber.' : error.message;
+        } finally {
+          activeDownload = undefined; $('transfer-cancel').hidden = true;
+          document.querySelectorAll('.download').forEach(item => { item.disabled = false; });
+        }
       }); actions.append(button);
     }
     actions.append(link); row.append(icon, info, actions); $('files').append(row);
@@ -88,3 +117,5 @@ $('paste').addEventListener('click', async () => {
 $('url').addEventListener('paste', () => setTimeout(() => { if ($('url').validity.valid && $('url').value) inspect(); }, 0));
 $('filters').addEventListener('click', event => { const button = event.target.closest('[data-type]'); if (!button) return; filter = button.dataset.type; document.querySelectorAll('[data-type]').forEach(item => item.setAttribute('aria-pressed', String(item === button))); render(); });
 $('sort').addEventListener('click', event => { const button = event.target.closest('[data-sort]'); if (!button) return; document.querySelectorAll('[data-sort]').forEach(item => item.setAttribute('aria-pressed', String(item === button))); render(); });
+
+$('transfer-cancel').addEventListener('click', () => activeDownload?.abort());

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { downloadParts } from '../public/transfer.js';
+const input = process.argv[2];
+if (!input) throw new Error('Usage: npm run test:chunks -- https://public-source/page-or-file');
+const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:3000';
+const inspection = await fetch(base + '/api/inspect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: input }), signal: AbortSignal.timeout(30000) });
+assert.equal(inspection.status, 200);
+const data = await inspection.json();
+const file = data.files.filter(file => file.verified && file.size > 3 * 1024 * 1024).sort((a, b) => b.size - a.size)[0];
+assert.ok(file, 'A verified file above 3 MiB is required for this test.');
+const result = await downloadParts({ url: file.url, fetcher: (path, options) => fetch(base + path, options), onProgress: ({ received, total, message }) => console.log(received ?? '-', total ?? '-', message) });
+const bytes = Buffer.from(await result.blob.arrayBuffer());
+const direct = await fetch(file.url, { signal: AbortSignal.timeout(120000) });
+assert.equal(direct.status, 200);
+const hash = value => createHash('sha256').update(value).digest('hex');
+assert.equal(hash(bytes), hash(Buffer.from(await direct.arrayBuffer())));
+console.log(JSON.stringify({ bytes: bytes.length, sha256: hash(bytes), equalToSource: true }));

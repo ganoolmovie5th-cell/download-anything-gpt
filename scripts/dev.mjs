@@ -2,8 +2,11 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import inspect from '../api/inspect.mjs';
 import download from '../api/download.mjs';
+import transfer from '../api/transfer.mjs';
+import chunk from '../api/chunk.mjs';
+const handlers = { '/api/inspect': inspect, '/api/download': download, '/api/transfer': transfer, '/api/chunk': chunk };
 const config = JSON.parse(await readFile(new URL('../vercel.json', import.meta.url)));
-const staticFiles = { '/analytics.js': ['../node_modules/@vercel/analytics/dist/index.mjs', 'text/javascript'], '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/logo.svg': ['logo.svg', 'image/svg+xml'] };
+const staticFiles = { '/transfer.js': ['transfer.js', 'text/javascript'], '/analytics.js': ['../node_modules/@vercel/analytics/dist/index.mjs', 'text/javascript'], '/': ['index.html', 'text/html; charset=utf-8'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/logo.svg': ['logo.svg', 'image/svg+xml'] };
 const server = http.createServer(async (req, res) => {
   for (const { key, value } of config.headers[0].headers) res.setHeader(key, value);
   res.status = code => { res.statusCode = code; return res; };
@@ -11,10 +14,10 @@ const server = http.createServer(async (req, res) => {
   res.send = value => res.end(value);
   const path = new URL(req.url, 'http://localhost').pathname;
   try {
-    if (path === '/api/inspect' || path === '/api/download') {
+    if (handlers[path]) {
       let body = ''; for await (const chunk of req) { body += chunk; if (Buffer.byteLength(body) > 8192) { res.status(413).json({ error: 'Permintaan terlalu besar.' }); return; } }
       try { req.body = body ? JSON.parse(body) : {}; } catch { res.status(400).json({ error: 'JSON tidak valid.' }); return; }
-      await (path === '/api/inspect' ? inspect : download)(req, res);
+      await handlers[path](req, res);
     } else if (staticFiles[path]) {
       const [name, mime] = staticFiles[path]; res.setHeader('Content-Type', mime); res.end(await readFile(new URL(`../public/${name}`, import.meta.url)));
     } else { res.status(404).end('Not found'); }

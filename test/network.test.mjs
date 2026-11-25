@@ -54,3 +54,18 @@ test('probe still enforces HTML size limits', async t => {
   upstream(t, 200, { 'content-type': 'text/html', 'content-length': '1000' });
   await assert.rejects(fetchPublic('http://8.8.8.8/page', { probe: true, limit: 10 }), { status: 413 });
 });
+test('range fetch sends Range/If-Range and returns exactly requested bytes', async t => {
+  upstream(t, 206, { 'content-range': 'bytes 0-3/10', etag: '"v1"' }, [Buffer.from('abcd')]);
+  const result = await fetchPublic('http://8.8.8.8/file', { limit: 4, range: { start: 0, end: 3, total: 10, validator: { type: 'etag', value: '"v1"' } } });
+  assert.equal(result.body.toString(), 'abcd');
+  assert.equal(http.request.mock.calls[0].arguments[1].headers.Range, 'bytes=0-3');
+  assert.equal(http.request.mock.calls[0].arguments[1].headers['If-Range'], '"v1"');
+});
+test('server ignoring Range is rejected before reading the body', async t => {
+  upstream(t, 200, { 'content-length': '22693138' }, []);
+  await assert.rejects(fetchPublic('http://8.8.8.8/file', { range: { start: 0, end: 0 }, limit: 1 }), /bertahap/);
+});
+test('truncated chunk cannot be returned as successful bytes', async t => {
+  upstream(t, 206, { 'content-range': 'bytes 0-3/10' }, [Buffer.from('ab')]);
+  await assert.rejects(fetchPublic('http://8.8.8.8/file', { range: { start: 0, end: 3 }, limit: 4 }), /tidak lengkap/);
+});

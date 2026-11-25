@@ -8,7 +8,10 @@ Website berbahasa Indonesia untuk menemukan dan mengunduh file publik dari URL. 
 - URL file langsung: gambar, video, audio, dokumen, arsip, dan tipe biner lain.
 - Halaman HTML: `img`, lazy `data-src`, `srcset`, `picture`, `video`, `audio`, `source`, poster, metadata Open Graph, dan link file/download.
 - Filter tipe, label format, ukuran jika tersedia, serta urutan kualitas rendah/tinggi berdasarkan label numerik sumber.
-- Unduh melalui server sampai **3 MiB (3.145.728 byte)**. File lebih besar menggunakan **Buka sumber**, tanpa diproxy Vercel.
+- File sampai **3 MiB** memakai unduhan biasa. File lebih besar diambil melalui Vercel dalam bagian **2 MiB**, lalu disusun menjadi satu file di browser. Sumber harus mendukung HTTP Range dan strong ETag atau Last-Modified.
+- Progres per bagian, pembatalan, dan hingga dua retry untuk gangguan sementara/rate limit. Server memeriksa HTTP 206, Content-Range, jumlah byte, ukuran total, dan penanda versi setiap bagian.
+- Chrome/Edge desktop dengan File System Access API menulis bertahap ke lokasi pilihan pengguna; file baru dikomit setelah semua bagian selesai. Browser tanpa API tersebut menggunakan Blob dengan batas **128 MiB**. Tab harus tetap terbuka; belum mendukung resume setelah reload.
+- Jika sumber menolak Range, tidak menyediakan penanda versi, atau berubah saat proses berjalan, unduhan dihentikan. Buka sumber tetap tersedia. Partisi tidak menyelesaikan ekstraksi YouTube atau muxing stream audio/video terpisah.
 - Verifikasi GET untuk maksimal 12 kandidat (empat koneksi bersamaan); respons HTML/perantara tidak diberi tombol Unduh.
 - Instagram: varian foto dari embed publik, tanpa varian crop yang eksplisit. Format mengikuti MIME (JPEG tidak lagi bernama HEIC).
 - Logo SVG, favicon, layout responsif, keyboard focus, live status, pembatalan pencarian, serta pesan error yang jelas.
@@ -36,7 +39,10 @@ Buka http://127.0.0.1:3000. Server dev hanya mendengarkan loopback dan meniru en
 npm test
 npm run build
 npm run test:live
+npm run test:chunks -- 'https://public-source/page-or-file'
 ```
+
+`test:chunks` memeriksa file lebih dari 3 MiB, menyusun bagian melalui API, lalu membandingkan SHA-256 dengan unduhan sumber. Script ini memakai memori dan dibatasi 128 MiB; jangan gunakan sumber yang tidak diizinkan.
 
 `test:live` membutuhkan server dev aktif dan jaringan. Menguji PNG, MP4, MP3, PDF, ekstraksi HTML nyata, halaman kosong dan penolakan IP private. SHA-256 byte unduhan dibandingkan dengan sumber. Kegagalan sumber pihak ketiga tidak otomatis berarti regresi aplikasi. CI menjalankan unit test dan build tanpa bergantung sumber eksternal.
 
@@ -58,12 +64,16 @@ Referensi resmi: [Node.js Functions](https://vercel.com/docs/functions/runtimes/
 
 HTTP/HTTPS saja, tanpa kredensial URL dan tanpa port khusus. Semua hasil DNS harus merupakan alamat publik; koneksi dipin ke IP yang divalidasi untuk menutup DNS rebinding. Redirect divalidasi ulang. Batas byte berlaku juga pada transfer chunked. Tidak meneruskan cookie/Authorization. File dikirim sebagai attachment `application/octet-stream` dan `nosniff`; konten HTML sumber tidak dieksekusi di frontend. CSP ketat dan penolakan origin lintas situs diterapkan.
 
+Transfer bertahap menambah jumlah request dan bandwidth Vercel; biaya dan kuota tetap berlaku. Saat HTTP 429, klien menunggu Retry-After maksimal 60 detik, dapat dibatalkan.
+
 Rate limit 30 permintaan/menit/IP **per instance** adalah perlindungan dasar, bukan pembatas global. Sebelum menerima trafik publik besar, tambahkan rate limit Vercel WAF untuk `/api/*` dan batas pengeluaran. Instance terpisah memiliki penghitung sendiri; layanan publik dapat menimbulkan biaya bandwidth. Tidak ada akun atau penyimpanan tautan di aplikasi; penyedia hosting/sumber tetap dapat mencatat request.
 
 ## Struktur
 
 - `public/`: UI dan logo SVG asli proyek.
-- `api/inspect.mjs`, `api/download.mjs`: endpoint Vercel.
+- `api/inspect.mjs`, `api/download.mjs`: inspeksi dan unduhan kecil.
+- `api/transfer.mjs`, `api/chunk.mjs`: negosiasi rentang dan pengambilan bagian maksimal 2 MiB.
+- `public/transfer.js`: transfer berurutan, retry, progres, penggabungan Blob/penulisan file.
 - `lib/`: jaringan aman, parser, validasi API.
 - `test/`: pengujian deterministik jaringan dan ekstraksi.
 - `scripts/smoke.mjs`: tes integrasi terhadap sumber publik.
